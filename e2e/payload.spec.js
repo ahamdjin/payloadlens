@@ -1,0 +1,41 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+test('example payload flags actual structural drift and exports mask-first fixture',async({page})=>{
+ await page.goto('/');
+ await page.locator('#sample').click();
+ await expect(page.locator('#risk-summary')).toContainText('potential contract-risk');
+ await expect(page.locator('#drift-paths')).toContainText('type changed');
+ await expect(page.locator('#drift-paths')).toContainText('legacy_code');
+ await expect(page.locator('#risk-summary')).toContainText('2 potential');
+ const evt=page.waitForEvent('download');
+ await page.locator('#export').click();
+ const f=await evt;
+ const packet=JSON.parse(await readFile(await f.path(),'utf8'));
+ expect(JSON.stringify(packet)).not.toContain('EXAMPLE_SECRET_12345');
+ expect(packet.drift.alertCount).toBe(2);
+ expect(packet.revision.authorization).toBe('[REDACTED]');
+});
+test('custom keys are redacted before diff and draft example JSON Schema export works',async({page})=>{
+ await page.goto('/');
+ await page.locator('#before').fill('{"accountNumber":"PRIVATE-ABC","data":{"amount":9}}');
+ await page.locator('#after').fill('{"accountNumber":"PRIVATE-DEF","data":{"amount":"9"}}');
+ await page.locator('#redact-keys').fill('accountNumber');
+ await page.locator('#compare').click();
+ await expect(page.locator('#risk-summary')).toContainText('1 potential');
+ await expect(page.locator('#delta')).not.toContainText('PRIVATE');
+ const evt=page.waitForEvent('download');
+ await page.locator('#export-schema').click();
+ const file=await evt;
+ const schema=JSON.parse(await readFile(await file.path(),'utf8'));
+ expect(schema.$schema).toContain('2020-12');
+ expect(schema.properties.accountNumber.type).toBe('string');
+ expect(schema.properties.data.properties.amount.type).toBe('string');
+ expect(schema.required).toBeUndefined();
+});
+test('mobile version fits the viewport after comparison',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/');
+ await page.locator('#sample').click();
+ const dims=await page.evaluate(()=>({width:window.innerWidth,scroll:document.documentElement.scrollWidth}));
+ expect(dims.scroll).toBeLessThanOrEqual(dims.width+1);
+});

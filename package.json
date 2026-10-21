@@ -1,0 +1,11 @@
+{
+  "name": "payloadlens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first webhook JSON comparison and safe fixture export",
+  "scripts": {"dev": "vite --host 0.0.0.0", "build": "vite build", "preview": "vite preview", "test": "node --test"},
+  "dependencies": {"jsondiffpatch": "^0.7.6"},
+  "devDependencies": {"vite": "^7.3.0"},
+  "engines": {"node": ">=20"}
+}

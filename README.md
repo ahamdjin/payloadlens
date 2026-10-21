@@ -1,43 +1,46 @@
 # PayloadLens
 
-**Same event. Different story.** A privacy-conscious, browser-only webhook payload comparison workbench built by [Ahmad Yar](https://www.ahmadyar.co/).
+**Catch webhook payload drift before it breaks consumers.** A local-first, open-source JSON webhook contract workbench by [Ahmad Yar](https://www.ahmadyar.co/).
 
-Paste two synthetic JSON event payloads, inspect changed JSON paths and added/removed/modified fields, and export a **redacted** fixture for reproducible debugging. Processing occurs on your device; this project does not host a payload receiver, account system or API.
+**Live demo:** https://payloadlens.vercel.app/ · **Source:** https://github.com/ahamdjin/payloadlens
 
-## Run
+## What makes it useful
 
-Node.js 20+:
+PayloadLens is **not** a hosted webhook receiver or delivery/replay infrastructure. It solves a different developer problem: take two real-world (preferably synthetic or sanitized) event samples, identify changes, and prepare a safe-ish fixture for regression tests.
 
-    npm install
-    npm run dev
+- Compare two nested JSON payloads locally in your browser with [jsondiffpatch](https://github.com/benjamine/jsondiffpatch) (MIT).
+- Inspect changed JSON paths with additions, removals, modifications, and array differences.
+- **Contract-drift review:** identify removed paths and changed JSON value types as potential consumer breakages, and show additions and array-size changes separately.
+- **Masking first:** configurable comma-separated field names plus a conservative default list (API keys, tokens, email, phone, card number, etc.). All report construction uses masked samples.
+- **Export a redacted fixture** containing both examples, structural findings, and path-level changes.
+- **Generate a draft JSON Schema** from the *redacted revised sample* for review and use in your own contract-testing workflows. It deliberately does not infer required keys or production semantics from a single sample.
+- Responsive interface, no account, server, database, telemetry, or third-party analytics in application source.
 
-Build for a static website (for example Vercel):
+## Try it locally
 
-    npm run build
+Requires Node.js 22 or later:
 
-Run tests:
+```sh
+npm install
+npm test
+npm run build
+npm run dev
+```
 
-    npm test
+The app is entirely static and can be hosted on Vercel or a static host.
 
-## Features
+## Crucial privacy limits
 
-- Visual before/after JSON inspection with deterministic path-level change summaries.
-- Structured diff powered by [jsondiffpatch](https://github.com/benjamine/jsondiffpatch) (MIT), including array move recognition.
-- Recursive masking for obvious credential-bearing keys and Bearer tokens **before generating the diff**.
-- Export redacted baseline, revised payload, and change paths into a single JSON fixture.
-- Example event pair for instant local testing.
-- Responsive interface, no app backend, no login, no analytics.
+**Do not paste confidential production data or credentials.** Redaction is *best-effort*, not a comprehensive secret scanner, PCI protection, PII anonymizer, or a guarantee that exported files are safe. User-defined sensitive fields may remain in unrecognized keys or free-text values. Masked fields are not meaningfully compared; a type change within a masked field will not be reported. Review all downloaded artifacts before distributing them.
 
-## Security and limitations
+Type-change and removed-field warnings are **structural heuristics**, not proof that your webhook consumer is broken: optional and nullable fields, provider versions, payload variants, and union types affect true compatibility. The generated JSON Schema is an editable **starting point**, not a formally validated specification. A single example cannot establish required fields. No live webhook endpoints, signature validation, request capture, replay or delivery guarantee are offered.
 
-**Do not paste production secrets.** Redaction is a best-effort convenience and is **not** complete PII scrubbing. Custom sensitive fields and unusual credential formats may not be recognized. Review every export before sharing.
+For delivery retries, idempotency, and signatures, see [Webhook Reliability Lab](https://github.com/ahamdjin/webhook-reliability-lab).
 
-Differences only in redacted credential values are intentionally hidden. Inputs are limited to 150 KB and deeply nested JSON is rejected. This app does not validate a sender's signature, run a webhook receiver, or establish delivery guarantees.
+## Upstream and license
 
-For learning retry and signature semantics, see the separate [Webhook Reliability Lab](https://github.com/ahamdjin/webhook-reliability-lab).
+Uses the maintained [jsondiffpatch](https://github.com/benjamine/jsondiffpatch) dependency under MIT. This application does not copy upstream code. Original product UI and drift/fixture analysis by Ahmad Yar; MIT-licensed source.
 
-## Upstream credits
+## Quality
 
-Uses [jsondiffpatch](https://github.com/benjamine/jsondiffpatch) as an MIT-licensed dependency; its source is not copied into this repository. The original product interface, safe-fixture workflow and tests are by Ahmad Yar (MIT).
-
-**Status:** Functional browser MVP source, not yet deployed or publicly launched. Install and run the checks before announcing it.
+`npm run build` requires unit tests to pass. Github Actions verifies new commits; browser smoke checks exercise the actual deployed app workflow before marketplace launch.
